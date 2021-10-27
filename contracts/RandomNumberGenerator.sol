@@ -2,16 +2,17 @@
 pragma solidity ^0.8.6;
 
 import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
-import "./interfaces/IGame.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "./interfaces/IKeeper.sol";
 
 /**
  * @title RandomNumberGenerator Contract
  */
-contract RandomNumberGenerator is VRFConsumerBase {
+contract RandomNumberGenerator is VRFConsumerBase, Ownable {
     bytes32 internal keyHash;
     uint256 internal fee;
 
-    IUnifiedLiquidityPool public ULP;
+    address public keeperAddr;
     uint256 private currentRandomNumber;
 
     mapping(bytes32 => address) requestToGame;
@@ -26,10 +27,13 @@ contract RandomNumberGenerator is VRFConsumerBase {
         bytes32 batchID
     );
 
-    modifier onlyApprovedGame() {
+    /// @notice Event emitted when keeper address is set.
+    event KeeperAddressSet(address keeperAddr);
+
+    modifier onlyKeeper() {
         require(
-            ULP.currentGameApproved(msg.sender),
-            "RandomNumberGenerator: Game is not approved"
+            msg.sender == keeperAddr,
+            "RandomNumberGenerator: Caller is not chainlink keeper addresss"
         );
         _;
     }
@@ -47,8 +51,7 @@ contract RandomNumberGenerator is VRFConsumerBase {
         address _vrfCoordinator,
         address _link,
         bytes32 _keyHash,
-        uint256 _fee,
-        IUnifiedLiquidityPool _ULP
+        uint256 _fee
     )
         VRFConsumerBase(
             _vrfCoordinator, // VRF Coordinator
@@ -57,7 +60,6 @@ contract RandomNumberGenerator is VRFConsumerBase {
     {
         keyHash = _keyHash;
         fee = _fee;
-        ULP = _ULP;
 
         emit RandomNumberGeneratorDeployed();
     }
@@ -67,7 +69,7 @@ contract RandomNumberGenerator is VRFConsumerBase {
      */
     function requestRandomNumber()
         external
-        onlyApprovedGame
+        onlyKeeper
         returns (bytes32 requestId)
     {
         require(LINK.balanceOf(address(this)) >= fee, "Not enough LINK");
@@ -89,9 +91,19 @@ contract RandomNumberGenerator is VRFConsumerBase {
         override
     {
         currentRandomNumber = _randomness;
-        IGame GAME = IGame(requestToGame[_requestId]);
-        GAME.play(_requestId, _randomness);
+        IKeeper keeper = IKeeper(requestToGame[_requestId]);
+        keeper.executeBattle(requestToGame[_requestId]);
 
         emit randomNumberArrived(true, _randomness, _requestId);
+    }
+
+    /**
+     * @dev External function to set keeper address. This function can be called only by owner.
+     * @param _keeperAddr Address of Keeper contract
+     */
+    function setKeeperAddress(address _keeperAddr) external onlyOwner {
+        keeperAddr = _keeperAddr;
+
+        emit KeeperAddressSet(_keeperAddr);
     }
 }
