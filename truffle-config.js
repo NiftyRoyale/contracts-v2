@@ -32,7 +32,4 @@ module.exports = {
   plugins: [
     'truffle-plugin-verify'
   ],
-  api_keys: {
-    etherscan: secretKovan.etherscan_api_key,
-  },
 };
