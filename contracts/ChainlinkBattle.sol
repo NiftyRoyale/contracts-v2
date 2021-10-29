@@ -6,11 +6,11 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract ChainlinkKeeper is VRFConsumerBase, Ownable {
+contract ChainlinkBattle is VRFConsumerBase, Ownable {
     using SafeERC20 for IERC20;
 
     /// @notice Event emitted when contract is deployed.
-    event ChainlinkKeeperDeployed();
+    event ChainlinkBattleDeployed();
 
     /// @notice Event emitted when owner withdrew the ETH.
     event EthWithdrew(address receiver);
@@ -69,7 +69,7 @@ contract ChainlinkKeeper is VRFConsumerBase, Ownable {
         keyHash = _keyHash;
         fee = _fee;
 
-        emit ChainlinkKeeperDeployed();
+        emit ChainlinkBattleDeployed();
     }
 
     /**
