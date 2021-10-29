@@ -21,11 +21,14 @@ contract ChainlinkKeeper is VRFConsumerBase, Ownable {
     /// @notice Event emitted when battle is added.
     event BattleAdded(BattleInfo battle);
 
+    /// @notice Event emitted when battle is executed.
+    event BattleExecuted(uint256 battleId, bytes32 requestId);
+
     /// @notice Event emitted when one nft is eliminated.
     event Eliminated(address gameAddr, uint256 tokenId);
 
     /// @notice Event emitted when winner is set.
-    event BattleWinner(address gameAddr, uint256 tokenId);
+    event BattleEnded(bool finished, address gameAddr, uint256 tokenId);
 
     bytes32 internal keyHash;
     uint256 public fee;
@@ -127,8 +130,8 @@ contract ChainlinkKeeper is VRFConsumerBase, Ownable {
      * @dev Internal function to execute battle.
      * @param _battleId Battle Id
      */
-    function executeBattle(uint256 _battleId) internal returns (bytes32) {
-        BattleInfo memory battle = battleQueue[_battleId];
+    function executeBattle(uint256 _battleId) internal {
+        BattleInfo storage battle = battleQueue[_battleId];
 
         require(
             LINK.balanceOf(address(this)) >= fee,
@@ -141,8 +144,9 @@ contract ChainlinkKeeper is VRFConsumerBase, Ownable {
 
         bytes32 requestId = requestRandomness(keyHash, fee);
         requestToBattle[requestId] = _battleId;
+        battle.lastEliminatedTime = block.timestamp;
 
-        return requestId;
+        emit BattleExecuted(_battleId, requestId);
     }
 
     /**
@@ -159,16 +163,15 @@ contract ChainlinkKeeper is VRFConsumerBase, Ownable {
         uint256 i = _randomness % battle.inPlay.length;
         uint256 tokenId = battle.inPlay[i];
         battle.outOfPlay.push(tokenId);
-        battle.inPlay[i] = battle.inPlay.length - 1;
+        battle.inPlay[i] = battle.inPlay[battle.inPlay.length - 1];
         battle.inPlay.pop();
 
-        battle.lastEliminatedTime = block.timestamp;
         emit Eliminated(battle.gameAddr, tokenId);
 
         if (battle.inPlay.length == 1) {
             battle.battleState = false;
             tokenId = battle.inPlay[0];
-            emit BattleWinner(battle.gameAddr, tokenId);
+            emit BattleEnded(true, battle.gameAddr, tokenId);
         }
     }
 
