@@ -5,8 +5,13 @@ import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/KeeperCompatibleInterface.sol";
 
-contract ChainlinkBattle is VRFConsumerBase, Ownable {
+contract ChainlinkBattle is
+    VRFConsumerBase,
+    Ownable,
+    KeeperCompatibleInterface
+{
     using SafeERC20 for IERC20;
 
     /// @notice Event emitted when contract is deployed.
@@ -99,12 +104,15 @@ contract ChainlinkBattle is VRFConsumerBase, Ownable {
     }
 
     /**
-     * @dev External function to check up keep.
-     * @param _checkData Keeper register check data
+     * @dev External function to check if the contract requires work to be done.
+     * @param _checkData Data passed to the contract when checking for upkeep.
+     * @return upkeepNeeded boolean to indicate whether the keeper should call performUpkeep or not.
+     * @return performData bytes that the keeper should call performUpkeep with, if upkeep is needed.
      */
     function checkUpkeep(bytes calldata _checkData)
         external
         view
+        override
         returns (bool, bytes memory)
     {
         for (uint256 i = 0; i < battleQueue.length; i++) {
@@ -121,10 +129,10 @@ contract ChainlinkBattle is VRFConsumerBase, Ownable {
     }
 
     /**
-     * @dev External function to perform up keep.
-     * @param _performData BattleId from checkup
+     * @dev Performs work on the contract. Executed by the keepers, via the registry.
+     * @param _performData is the data which was passed back from the checkData simulation.
      */
-    function performUpkeep(bytes calldata _performData) external {
+    function performUpkeep(bytes calldata _performData) external override {
         uint256 battleId = bytesToUint256(_performData, 0);
         executeBattle(battleId);
     }
