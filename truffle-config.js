@@ -1,5 +1,6 @@
 const HDWalletProvider = require("@truffle/hdwallet-provider");
 const secretMumbai = require("./secret.mumbai.json");
+const secretKovan = require("./secret.kovan.json");
 
 module.exports = {
   // Uncommenting the defaults below
@@ -9,6 +10,16 @@ module.exports = {
   // for more details on how to specify configuration options!
   //
   networks: {
+    kovan: {
+      provider: () =>
+        new HDWalletProvider(
+          secretKovan.mnemonic,
+          `https://kovan.infura.io/v3/${secretKovan.infura_api_key}`
+        ),
+      network_id: 42,
+      timeoutBlocks: 50000,
+      skipDryRun: true,
+    },
     mumbai: {
       provider: () => new HDWalletProvider(secretMumbai.mnemonic, `https://rpc-mumbai.maticvigil.com`),
       network_id: 80001,
@@ -32,4 +43,7 @@ module.exports = {
   plugins: [
     'truffle-plugin-verify'
   ],
+  api_keys: {
+    etherscan: secretKovan.etherscan_api_key,
+  },
 };
