@@ -30,6 +30,9 @@ contract ChainlinkBattle is VRFConsumerBase, Ownable {
     /// @notice Event emitted when winner is set.
     event BattleEnded(bool finished, address gameAddr, uint256 tokenId);
 
+    /// @notice Event emitted when interval time is set.
+    event BattleIntervalTimeSet(uint256 battleId, uint256 intervalTime);
+
     bytes32 internal keyHash;
     uint256 public fee;
 
@@ -173,6 +176,21 @@ contract ChainlinkBattle is VRFConsumerBase, Ownable {
             tokenId = battle.inPlay[0];
             emit BattleEnded(true, battle.gameAddr, tokenId);
         }
+    }
+
+    /**
+     * @dev External function to set battle interval time. This function can be called only by owner.
+     * @param _battleId Battle Id
+     * @param _intervalTime New interval time
+     */
+    function setBattleIntervalTime(uint256 _battleId, uint256 _intervalTime)
+        external
+        onlyOwner
+    {
+        BattleInfo storage battle = battleQueue[_battleId];
+        battle.intervalTime = _intervalTime;
+
+        emit BattleIntervalTimeSet(_battleId, _intervalTime);
     }
 
     /**
