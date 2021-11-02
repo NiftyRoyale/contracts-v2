@@ -2,11 +2,13 @@
 pragma solidity ^0.8.6;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract BattleRoyale is ERC721URIStorage, Ownable {
     using SafeERC20 for IERC20;
+    using Strings for uint256;
 
     /// @notice Event emitted when contract is deployed.
     event BattleRoyaleDeployed();
@@ -128,8 +130,15 @@ contract BattleRoyale is ERC721URIStorage, Ownable {
 
         for (uint256 i = 0; i < _amount; i++) {
             uint256 tokenId = totalNFTCounts + i + 1;
+
             _mint(msg.sender, tokenId);
-            _setTokenURI(tokenId, defaultTokenURI);
+
+            string memory tokenURI = string(
+                abi.encodePacked(defaultTokenURI, tokenId.toString())
+            );
+
+            _setTokenURI(tokenId, tokenURI);
+
             inPlay.push(tokenId);
         }
 
@@ -156,6 +165,10 @@ contract BattleRoyale is ERC721URIStorage, Ownable {
      * @param _winnerTokenId Winner token Id in battle
      */
     function endBattle(uint256 _winnerTokenId) external onlyOwner {
+        require(
+            battleState == BATTLE_STATE.RUNNING,
+            "BattleRoyale: Battle is not started"
+        );
         battleState = BATTLE_STATE.ENDED;
         _setTokenURI(_winnerTokenId, prizeTokenURI);
 
@@ -224,6 +237,11 @@ contract BattleRoyale is ERC721URIStorage, Ownable {
 
         emit MaxSupplySet(maxSupply);
     }
+
+    /**
+     * Fallback function to receive ETH
+     */
+    receive() external payable {}
 
     /**
      * @dev External function to withdraw ETH in contract. This function can be called only by owner.

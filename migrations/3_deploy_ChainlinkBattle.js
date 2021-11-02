@@ -1,7 +1,7 @@
 const ChainlinkBattle = artifacts.require("ChainlinkBattle");
 const { BN } = require("web3-utils");
 
-module.exports = function (deployer) {
+module.exports = async function (deployer) {
   await deployer.deploy(
     ChainlinkBattle,
     "0x8C7382F9D8f56b33781fE506E897a4F1e2d17255", // Chainlink VRF Coordinator address

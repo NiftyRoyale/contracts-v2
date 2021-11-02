@@ -30,10 +30,15 @@ contract ChainlinkBattle is
     event BattleExecuted(uint256 battleId, bytes32 requestId);
 
     /// @notice Event emitted when one nft is eliminated.
-    event Eliminated(address gameAddr, uint256 tokenId);
+    event Eliminated(address gameAddr, uint256 tokenId, bool battleState);
 
     /// @notice Event emitted when winner is set.
-    event BattleEnded(bool finished, address gameAddr, uint256 tokenId);
+    event BattleEnded(
+        bool finished,
+        address gameAddr,
+        uint256 winnerTokenId,
+        bool battleState
+    );
 
     /// @notice Event emitted when interval time is set.
     event BattleIntervalTimeSet(uint256 battleId, uint256 intervalTime);
@@ -50,6 +55,7 @@ contract ChainlinkBattle is
         uint256[] inPlay;
         uint256[] outOfPlay;
         bool battleState;
+        uint256 winnerTokenId;
     }
 
     BattleInfo[] public battleQueue;
@@ -177,12 +183,17 @@ contract ChainlinkBattle is
         battle.inPlay[i] = battle.inPlay[battle.inPlay.length - 1];
         battle.inPlay.pop();
 
-        emit Eliminated(battle.gameAddr, tokenId);
+        emit Eliminated(battle.gameAddr, tokenId, true);
 
         if (battle.inPlay.length == 1) {
             battle.battleState = false;
-            tokenId = battle.inPlay[0];
-            emit BattleEnded(true, battle.gameAddr, tokenId);
+            battle.winnerTokenId = battle.inPlay[0];
+            emit BattleEnded(
+                true,
+                battle.gameAddr,
+                battle.winnerTokenId,
+                false
+            );
         }
     }
 
@@ -199,6 +210,30 @@ contract ChainlinkBattle is
         battle.intervalTime = _intervalTime;
 
         emit BattleIntervalTimeSet(_battleId, _intervalTime);
+    }
+
+    /**
+     * @dev External function to get in-play tokens.
+     * @param _battleId Battle Id
+     */
+    function getInPlay(uint256 _battleId)
+        external
+        view
+        returns (uint256[] memory)
+    {
+        return battleQueue[_battleId].inPlay;
+    }
+
+    /**
+     * @dev External function to get out-play tokens.
+     * @param _battleId Battle Id
+     */
+    function getOutPlay(uint256 _battleId)
+        external
+        view
+        returns (uint256[] memory)
+    {
+        return battleQueue[_battleId].outOfPlay;
     }
 
     /**

@@ -1,7 +1,7 @@
 const BattleRoyale = artifacts.require("BattleRoyale");
 const { BN } = require("web3-utils");
 
-module.exports = function (deployer) {
+module.exports = async function (deployer) {
   await deployer.deploy(
     BattleRoyale,
     "NiftyRoyale",
@@ -9,7 +9,7 @@ module.exports = function (deployer) {
     new BN('10000000000000000'),
     5,
     100,
-    "https://https://app.niftyroyale.com/"
+    "https://app.niftyroyale.com/"
   );
 
   return;
