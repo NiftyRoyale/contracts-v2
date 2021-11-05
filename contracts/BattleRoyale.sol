@@ -23,7 +23,7 @@ contract BattleRoyale is ERC721URIStorage, Ownable {
     event Purchased(address user, uint256 amount, uint256 totalNFTCounts);
 
     /// @notice Event emitted when battle has started.
-    event BattleStarted(address battleAddress, uint256[] inPlay);
+    event BattleStarted(address battleAddress, uint32[] inPlay);
 
     /// @notice Event emitted when battle has ended.
     event BattleEnded(
@@ -67,7 +67,7 @@ contract BattleRoyale is ERC721URIStorage, Ownable {
     uint256 public totalNFTCounts;
     uint256 public unitsPerTransaction;
 
-    uint256[] public inPlay;
+    uint32[] public inPlay;
 
     /**
      * @dev Constructor function
@@ -139,7 +139,7 @@ contract BattleRoyale is ERC721URIStorage, Ownable {
 
             _setTokenURI(tokenId, tokenURI);
 
-            inPlay.push(tokenId);
+            inPlay.push(uint32(tokenId));
         }
 
         totalNFTCounts += _amount;

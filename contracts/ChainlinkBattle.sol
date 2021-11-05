@@ -43,6 +43,12 @@ contract ChainlinkBattle is
     /// @notice Event emitted when interval time is set.
     event BattleIntervalTimeSet(uint256 battleId, uint256 intervalTime);
 
+    /// @notice Event emitted when eliminated token count is set.
+    event EliminatedTokenCountSet(
+        uint256 battleId,
+        uint256 eliminatedTokenCount
+    );
+
     bytes32 internal keyHash;
     uint256 public fee;
 
@@ -52,10 +58,11 @@ contract ChainlinkBattle is
         address gameAddr;
         uint256 intervalTime;
         uint256 lastEliminatedTime;
-        uint256[] inPlay;
-        uint256[] outOfPlay;
+        uint32[] inPlay;
+        uint32[] outOfPlay;
         bool battleState;
         uint256 winnerTokenId;
+        uint256 eliminatedTokenCount;
     }
 
     BattleInfo[] public battleQueue;
@@ -91,11 +98,13 @@ contract ChainlinkBattle is
      * @param _gameAddr Battle game address
      * @param _intervalTime Interval time
      * @param _inPlay Tokens in game
+     * @param _eliminatedTokenCount Number of tokens that should be removed by one perfermUpKeep.
      */
     function addToBattleQueue(
         address _gameAddr,
         uint256 _intervalTime,
-        uint256[] memory _inPlay
+        uint32[] memory _inPlay,
+        uint256 _eliminatedTokenCount
     ) external onlyOwner {
         BattleInfo memory battle;
         battle.gameAddr = _gameAddr;
@@ -103,6 +112,7 @@ contract ChainlinkBattle is
         battle.lastEliminatedTime = block.timestamp;
         battle.inPlay = _inPlay;
         battle.battleState = true;
+        battle.eliminatedTokenCount = _eliminatedTokenCount;
 
         battleQueue.push(battle);
 
@@ -177,13 +187,25 @@ contract ChainlinkBattle is
     {
         uint256 _battleId = requestToBattle[_requestId];
         BattleInfo storage battle = battleQueue[_battleId];
-        uint256 i = _randomness % battle.inPlay.length;
-        uint256 tokenId = battle.inPlay[i];
-        battle.outOfPlay.push(tokenId);
-        battle.inPlay[i] = battle.inPlay[battle.inPlay.length - 1];
-        battle.inPlay.pop();
+        uint256 eliminatedTokenCount = battle.eliminatedTokenCount;
 
-        emit Eliminated(battle.gameAddr, tokenId, true);
+        if (eliminatedTokenCount >= battle.inPlay.length) {
+            eliminatedTokenCount = battle.inPlay.length - 1;
+        }
+
+        for (uint256 index = 0; index < eliminatedTokenCount; index++) {
+            uint256 i = uint256(
+                keccak256(abi.encode(_randomness, index, block.timestamp))
+            ) % battle.inPlay.length;
+
+            uint32 tokenId = battle.inPlay[i];
+
+            battle.outOfPlay.push(tokenId);
+            battle.inPlay[i] = battle.inPlay[battle.inPlay.length - 1];
+            battle.inPlay.pop();
+
+            emit Eliminated(battle.gameAddr, tokenId, true);
+        }
 
         if (battle.inPlay.length == 1) {
             battle.battleState = false;
@@ -213,13 +235,28 @@ contract ChainlinkBattle is
     }
 
     /**
+     * @dev External function to set eliminated token count. This function can be called only by owner.
+     * @param _battleId Battle Id
+     * @param _eliminatedTokenCount New eliminated token count
+     */
+    function setEliminatedTokenCount(
+        uint256 _battleId,
+        uint256 _eliminatedTokenCount
+    ) external onlyOwner {
+        BattleInfo storage battle = battleQueue[_battleId];
+        battle.eliminatedTokenCount = _eliminatedTokenCount;
+
+        emit EliminatedTokenCountSet(_battleId, _eliminatedTokenCount);
+    }
+
+    /**
      * @dev External function to get in-play tokens.
      * @param _battleId Battle Id
      */
     function getInPlay(uint256 _battleId)
         external
         view
-        returns (uint256[] memory)
+        returns (uint32[] memory)
     {
         return battleQueue[_battleId].inPlay;
     }
@@ -231,7 +268,7 @@ contract ChainlinkBattle is
     function getOutPlay(uint256 _battleId)
         external
         view
-        returns (uint256[] memory)
+        returns (uint32[] memory)
     {
         return battleQueue[_battleId].outOfPlay;
     }
