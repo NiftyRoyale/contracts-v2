@@ -52,7 +52,7 @@ contract ChainlinkBattle is
     bytes32 internal keyHash;
     uint256 public fee;
 
-    mapping(bytes32 => uint256) requestToBattle;
+    mapping(bytes32 => uint256) private requestToBattle;
 
     struct BattleInfo {
         address gameAddr;
