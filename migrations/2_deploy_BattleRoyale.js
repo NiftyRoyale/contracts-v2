@@ -9,6 +9,7 @@ module.exports = async function (deployer) {
     new BN('10000000000000000'),
     5,
     100,
+    "weiq23sfxcvji92312asdkjwesdflj",
     "https://app.niftyroyale.com/"
   );
 
