@@ -20,7 +20,7 @@ contract BattleRoyale is ERC721URIStorage, Ownable {
     event ERC20TokenWithdrew(address receiver);
 
     /// @notice Event emitted when user purchased the tokens.
-    event Purchased(address user, uint256 amount, uint256 totalNFTCounts);
+    event Purchased(address user, uint256 amount, uint256 totalSupply);
 
     /// @notice Event emitted when battle has started.
     event BattleStarted(address battleAddress, uint32[] inPlay);
@@ -31,6 +31,9 @@ contract BattleRoyale is ERC721URIStorage, Ownable {
         uint256 winnerTokenId,
         string prizeTokenURI
     );
+
+    /// @notice Event emitted when base token uri set.
+    event BaseURISet(string baseURI);
 
     /// @notice Event emitted when default token uri set.
     event DefaultTokenURISet(string defaultTokenURI);
@@ -60,11 +63,11 @@ contract BattleRoyale is ERC721URIStorage, Ownable {
 
     string public prizeTokenURI;
     string public defaultTokenURI;
+    string public baseURI;
 
     uint256 public price;
     uint256 public maxSupply;
-    uint256 public intervalTime;
-    uint256 public totalNFTCounts;
+    uint256 public totalSupply;
     uint256 public unitsPerTransaction;
 
     uint32[] public inPlay;
@@ -77,6 +80,7 @@ contract BattleRoyale is ERC721URIStorage, Ownable {
      * @param _unitsPerTransaction Purchasable token amounts per transaction
      * @param _maxSupply Maximum number of mintable tokens
      * @param _defaultTokenURI Deafult token uri
+     * @param _baseURI Base token uri
      */
     constructor(
         string memory _name,
@@ -84,14 +88,15 @@ contract BattleRoyale is ERC721URIStorage, Ownable {
         uint256 _price,
         uint256 _unitsPerTransaction,
         uint256 _maxSupply,
-        string memory _defaultTokenURI
+        string memory _defaultTokenURI,
+        string memory _baseURI
     ) ERC721(_name, _symbol) {
         battleState = BATTLE_STATE.STANDBY;
-        intervalTime = 30;
         price = _price;
         unitsPerTransaction = _unitsPerTransaction;
         maxSupply = _maxSupply;
         defaultTokenURI = _defaultTokenURI;
+        baseURI = _baseURI;
 
         emit BattleRoyaleDeployed();
     }
@@ -107,13 +112,13 @@ contract BattleRoyale is ERC721URIStorage, Ownable {
             "BattleRoyale: Current battle state is not ready to purchase tokens"
         );
         require(
-            maxSupply > 0 && totalNFTCounts < maxSupply,
+            maxSupply > 0 && totalSupply < maxSupply,
             "BattleRoyale: Total token amount is more than max supply"
         );
 
         if (msg.sender != owner()) {
             require(
-                _amount <= maxSupply - totalNFTCounts &&
+                _amount <= maxSupply - totalSupply &&
                     _amount > 0 &&
                     _amount <= unitsPerTransaction,
                 "BattleRoyale: Out range of token amount"
@@ -129,12 +134,12 @@ contract BattleRoyale is ERC721URIStorage, Ownable {
         }
 
         for (uint256 i = 0; i < _amount; i++) {
-            uint256 tokenId = totalNFTCounts + i + 1;
+            uint256 tokenId = totalSupply + i + 1;
 
             _safeMint(msg.sender, tokenId);
 
             string memory tokenURI = string(
-                abi.encodePacked(defaultTokenURI, tokenId.toString())
+                abi.encodePacked(baseURI, defaultTokenURI)
             );
 
             _setTokenURI(tokenId, tokenURI);
@@ -142,9 +147,9 @@ contract BattleRoyale is ERC721URIStorage, Ownable {
             inPlay.push(uint32(tokenId));
         }
 
-        totalNFTCounts += _amount;
+        totalSupply += _amount;
 
-        emit Purchased(msg.sender, _amount, totalNFTCounts);
+        emit Purchased(msg.sender, _amount, totalSupply);
     }
 
     /**
@@ -170,9 +175,23 @@ contract BattleRoyale is ERC721URIStorage, Ownable {
             "BattleRoyale: Battle is not started"
         );
         battleState = BATTLE_STATE.ENDED;
-        _setTokenURI(_winnerTokenId, prizeTokenURI);
+
+        string memory tokenURI = string(
+            abi.encodePacked(baseURI, prizeTokenURI)
+        );
+        _setTokenURI(_winnerTokenId, tokenURI);
 
         emit BattleEnded(address(this), _winnerTokenId, prizeTokenURI);
+    }
+
+    /**
+     * @dev External function to set the base token URI. This function can be called only by owner.
+     * @param _tokenURI New base token uri
+     */
+    function setBaseURI(string memory _tokenURI) external onlyOwner {
+        baseURI = _tokenURI;
+
+        emit BaseURISet(baseURI);
     }
 
     /**
@@ -193,16 +212,6 @@ contract BattleRoyale is ERC721URIStorage, Ownable {
         prizeTokenURI = _tokenURI;
 
         emit PrizeTokenURISet(prizeTokenURI);
-    }
-
-    /**
-     * @dev External function to set interval time. This function can be called only by owner.
-     * @param _intervalTime New interval time
-     */
-    function setIntervalTime(uint256 _intervalTime) external onlyOwner {
-        intervalTime = _intervalTime;
-
-        emit IntervalTimeSet(intervalTime);
     }
 
     /**
