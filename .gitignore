@@ -3,4 +3,5 @@
 .env
 secret.mumbai.json
 secret.kovan.json
+secret.rinkeby.json
 /public

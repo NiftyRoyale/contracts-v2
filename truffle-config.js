@@ -1,6 +1,7 @@
 const HDWalletProvider = require("@truffle/hdwallet-provider");
 const secretMumbai = require("./secret.mumbai.json");
 const secretKovan = require("./secret.kovan.json");
+const secretRinkeby = require("./secret.rinkeby.json");
 
 module.exports = {
   // Uncommenting the defaults below
@@ -10,6 +11,16 @@ module.exports = {
   // for more details on how to specify configuration options!
   //
   networks: {
+    rinkeby: {
+      provider: () =>
+        new HDWalletProvider(
+          secretRinkeby.mnemonic,
+          `https://rinkeby.infura.io/v3/${secretRinkeby.infura_api_key}`
+        ),
+      network_id: 4,
+      timeoutBlocks: 50000,
+      skipDryRun: true,
+    },
     kovan: {
       provider: () =>
         new HDWalletProvider(
