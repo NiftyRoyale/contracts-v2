@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract BattleRoyaleRandom is ERC721URIStorage, Ownable {
+contract BattleRoyalePiece is ERC721URIStorage, Ownable {
     using SafeERC20 for IERC20;
 
     /// @notice Event emitted when contract is deployed.
@@ -30,14 +30,8 @@ contract BattleRoyaleRandom is ERC721URIStorage, Ownable {
         string prizeTokenURI
     );
 
-    /// @notice Event emitted when token URIs set.
-    event TokenURIsAdded(string[] tokenURIs);
-
-    /// @notice Event emitted when token URI has updated.
-    event TokenURIUpdated(uint256 index, string tokenURI);
-
-    /// @notice Event emitted when token URI has removed.
-    event TokenURIRemoved(uint256 index, string[] tokenURIs);
+    /// @notice Event emitted when token URI has changed.
+    event TokenURIChanged(uint256 tokenType, string tokenURI);
 
     /// @notice Event emitted when prize token uri set.
     event PrizeTokenURISet(string prizeTokenURI);
@@ -63,7 +57,8 @@ contract BattleRoyaleRandom is ERC721URIStorage, Ownable {
     BATTLE_STATE public battleState;
 
     string public prizeTokenURI;
-    string[] public tokenURIs;
+    string public firstTokenURI;
+    string public secondTokenURI;
 
     uint256 public price;
     uint256 public maxSupply;
@@ -79,7 +74,8 @@ contract BattleRoyaleRandom is ERC721URIStorage, Ownable {
      * @param _price Token price
      * @param _unitsPerTransaction Purchasable token amounts per transaction
      * @param _maxSupply Maximum number of mintable tokens
-     * @param _tokenURIs Array of token uris
+     * @param _firstTokenURI First artist token uri
+     * @param _secondTokenURI Second artist token uri
      */
     constructor(
         string memory _name,
@@ -87,13 +83,15 @@ contract BattleRoyaleRandom is ERC721URIStorage, Ownable {
         uint256 _price,
         uint256 _unitsPerTransaction,
         uint256 _maxSupply,
-        string[] memory _tokenURIs
+        string memory _firstTokenURI,
+        string memory _secondTokenURI
     ) ERC721(_name, _symbol) {
         battleState = BATTLE_STATE.STANDBY;
         price = _price;
         unitsPerTransaction = _unitsPerTransaction;
         maxSupply = _maxSupply;
-        tokenURIs = _tokenURIs;
+        firstTokenURI = _firstTokenURI;
+        secondTokenURI = _secondTokenURI;
 
         emit BattleRoyaleDeployed();
     }
@@ -101,16 +99,21 @@ contract BattleRoyaleRandom is ERC721URIStorage, Ownable {
     /**
      * @dev External function to purchase tokens.
      * @param _amount Token amount to buy
+     * @param _type Token uri type
      */
-    function purchase(uint256 _amount) external payable {
-        require(price > 0, "BattleRoyaleRandom: Token price is zero");
+    function purchase(uint256 _amount, uint256 _type) external payable {
+        require(price > 0, "BattleRoyalePiece: Token price is zero");
+        require(
+            _type > 0 && _type < 3,
+            "BattleRoyalePiece: Caller didn't choose the token type"
+        );
         require(
             battleState == BATTLE_STATE.STANDBY,
-            "BattleRoyaleRandom: Current battle state is not ready to purchase tokens"
+            "BattleRoyalePiece: Current battle state is not ready to purchase tokens"
         );
         require(
             maxSupply > 0 && totalSupply < maxSupply,
-            "BattleRoyaleRandom: Total token amount is more than max supply"
+            "BattleRoyalePiece: Total token amount is more than max supply"
         );
 
         if (msg.sender != owner()) {
@@ -118,11 +121,11 @@ contract BattleRoyaleRandom is ERC721URIStorage, Ownable {
                 _amount <= maxSupply - totalSupply &&
                     _amount > 0 &&
                     _amount <= unitsPerTransaction,
-                "BattleRoyaleRandom: Out range of token amount"
+                "BattleRoyalePiece: Out range of token amount"
             );
             require(
                 msg.value >= (price * _amount),
-                "BattleRoyaleRandom: Caller hasn't got enough ETH for buying tokens"
+                "BattleRoyalePiece: Caller hasn't got enough ETH for buying tokens"
             );
         }
 
@@ -131,15 +134,11 @@ contract BattleRoyaleRandom is ERC721URIStorage, Ownable {
 
             _safeMint(msg.sender, tokenId);
 
-            uint256 index = uint256(
-                keccak256(
-                    abi.encode(i, _amount, block.timestamp, msg.sender, tokenId)
-                )
-            ) % tokenURIs.length;
-
-            string memory tokenURI = tokenURIs[index];
-
-            _setTokenURI(tokenId, tokenURI);
+            if (_type == 1) {
+                _setTokenURI(tokenId, firstTokenURI);
+            } else {
+                _setTokenURI(tokenId, secondTokenURI);
+            }
 
             inPlay.push(uint32(tokenId));
         }
@@ -155,7 +154,7 @@ contract BattleRoyaleRandom is ERC721URIStorage, Ownable {
     function startBattle() external onlyOwner {
         require(
             bytes(prizeTokenURI).length > 0 && inPlay.length > 1,
-            "BattleRoyaleRandom: Tokens in game are not enough to play"
+            "BattleRoyalePiece: Tokens in game are not enough to play"
         );
         battleState = BATTLE_STATE.RUNNING;
 
@@ -169,7 +168,7 @@ contract BattleRoyaleRandom is ERC721URIStorage, Ownable {
     function endBattle(uint256 _winnerTokenId) external onlyOwner {
         require(
             battleState == BATTLE_STATE.RUNNING,
-            "BattleRoyaleRandom: Battle is not started"
+            "BattleRoyalePiece: Battle is not started"
         );
         battleState = BATTLE_STATE.ENDED;
 
@@ -179,40 +178,23 @@ contract BattleRoyaleRandom is ERC721URIStorage, Ownable {
     }
 
     /**
-     * @dev External function to add token URIs. This function can be called only by owner.
-     * @param _tokenURIs Array of new token uris
+     * @dev External function to change the token uri. This function can be called only by owner.
+     * @param _type Token uri type 1: First token uri, 2: Second token uri
+     * @param _tokenURI New token uri
      */
-    function addTokenURIs(string[] memory _tokenURIs) external onlyOwner {
-        for (uint256 i = 0; i < _tokenURIs.length; i++) {
-            tokenURIs.push(_tokenURIs[i]);
-        }
-
-        emit TokenURIsAdded(_tokenURIs);
-    }
-
-    /**
-     * @dev External function to update the token uri. This function can be called only by owner.
-     * @param _index Index of token uri
-     * @param _tokenURI Array of new token uris
-     */
-    function updateTokenURI(uint256 _index, string memory _tokenURI)
+    function changeTokenURI(uint256 _type, string memory _tokenURI)
         external
         onlyOwner
     {
-        tokenURIs[_index] = _tokenURI;
+        require(_type > 0 && _type < 3, "BattleRoyalePiece: Type is not valid");
 
-        emit TokenURIUpdated(_index, _tokenURI);
-    }
+        if (_type == 1) {
+            firstTokenURI = _tokenURI;
+        } else {
+            secondTokenURI = _tokenURI;
+        }
 
-    /**
-     * @dev External function to remove the token uri. This function can be called only by owner.
-     * @param _index Index of token uri
-     */
-    function removeTokenURI(uint256 _index) external onlyOwner {
-        tokenURIs[_index] = tokenURIs[tokenURIs.length - 1];
-        tokenURIs.pop();
-
-        emit TokenURIRemoved(_index, tokenURIs);
+        emit TokenURIChanged(_type, _tokenURI);
     }
 
     /**
@@ -269,7 +251,7 @@ contract BattleRoyaleRandom is ERC721URIStorage, Ownable {
      */
     function withdrawETH(uint256 _amount) external onlyOwner {
         uint256 balance = address(this).balance;
-        require(_amount <= balance, "BattleRoyaleRandom: Out of balance");
+        require(_amount <= balance, "BattleRoyalePiece: Out of balance");
 
         payable(msg.sender).transfer(_amount);
 
@@ -288,7 +270,7 @@ contract BattleRoyaleRandom is ERC721URIStorage, Ownable {
         IERC20 token = IERC20(_tokenAddr);
 
         uint256 balance = token.balanceOf(address(this));
-        require(_amount <= balance, "BattleRoyaleRandom: Out of balance");
+        require(_amount <= balance, "BattleRoyalePiece: Out of balance");
 
         token.safeTransfer(msg.sender, _amount);
 
