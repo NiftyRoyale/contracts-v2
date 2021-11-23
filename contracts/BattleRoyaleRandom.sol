@@ -114,7 +114,7 @@ contract BattleRoyaleRandom is ERC721URIStorage, Ownable {
         );
 
         require(
-            maxSupply == tokenURIs.length,
+            tokenURIs.length >= _amount,
             "BattleRoyaleRandom: Token uris are not enough to purchase"
         );
 
