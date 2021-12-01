@@ -9,7 +9,7 @@ contract BattleRoyalePiece is ERC721URIStorage, Ownable {
     using SafeERC20 for IERC20;
 
     /// @notice Event emitted when contract is deployed.
-    event BattleRoyaleDeployed();
+    event BattleRoyalePieceDeployed();
 
     /// @notice Event emitted when owner withdrew the ETH.
     event EthWithdrew(address receiver);
@@ -93,7 +93,7 @@ contract BattleRoyalePiece is ERC721URIStorage, Ownable {
         firstTokenURI = _firstTokenURI;
         secondTokenURI = _secondTokenURI;
 
-        emit BattleRoyaleDeployed();
+        emit BattleRoyalePieceDeployed();
     }
 
     /**

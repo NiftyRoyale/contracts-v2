@@ -5,11 +5,11 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract BattleRoyaleRandom is ERC721URIStorage, Ownable {
+contract BattleRoyaleRandomPart is ERC721URIStorage, Ownable {
     using SafeERC20 for IERC20;
 
     /// @notice Event emitted when contract is deployed.
-    event BattleRoyaleRandomDeployed();
+    event BattleRoyaleRandomPartDeployed();
 
     /// @notice Event emitted when owner withdrew the ETH.
     event EthWithdrew(address receiver);
@@ -30,11 +30,11 @@ contract BattleRoyaleRandom is ERC721URIStorage, Ownable {
         string prizeTokenURI
     );
 
-    /// @notice Event emitted when token URIs set.
-    event TokenURIsAdded(string[] tokenURIs);
+    /// @notice Event emitted when token URIs has added.
+    event TokenURIAdded(string tokenURI, uint256 count);
 
-    /// @notice Event emitted when token URI has updated.
-    event TokenURIUpdated(uint256 index, string tokenURI);
+    /// @notice Event emitted when token URI count has updated.
+    event TokenURICountUpdated(string tokenURI, uint256 count);
 
     /// @notice Event emitted when token URI has removed.
     event TokenURIRemoved(uint256 index, string[] tokenURIs);
@@ -72,6 +72,8 @@ contract BattleRoyaleRandom is ERC721URIStorage, Ownable {
 
     uint32[] public inPlay;
 
+    mapping(string => uint256) public tokenURICount;
+
     /**
      * @dev Constructor function
      * @param _name Token name
@@ -92,7 +94,7 @@ contract BattleRoyaleRandom is ERC721URIStorage, Ownable {
         unitsPerTransaction = _unitsPerTransaction;
         maxSupply = _maxSupply;
 
-        emit BattleRoyaleRandomDeployed();
+        emit BattleRoyaleRandomPartDeployed();
     }
 
     /**
@@ -143,9 +145,13 @@ contract BattleRoyaleRandom is ERC721URIStorage, Ownable {
 
             _setTokenURI(tokenId, tokenURI);
 
-            tokenURIs[index] = tokenURIs[tokenURIs.length - 1];
-            tokenURIs.pop();
+            tokenURICount[tokenURI]--;
 
+            if (tokenURICount[tokenURI] == 0) {
+                tokenURIs[index] = tokenURIs[tokenURIs.length - 1];
+                tokenURIs.pop();
+            }
+            
             inPlay.push(uint32(tokenId));
         }
 
@@ -184,29 +190,32 @@ contract BattleRoyaleRandom is ERC721URIStorage, Ownable {
     }
 
     /**
-     * @dev External function to add token URIs. This function can be called only by owner.
-     * @param _tokenURIs Array of new token uris
+     * @dev External function to add token URI. This function can be called only by owner.
+     * @param _tokenURI New token uri
+     * @param _count Token uri count
      */
-    function addTokenURIs(string[] memory _tokenURIs) external onlyOwner {
-        for (uint256 i = 0; i < _tokenURIs.length; i++) {
-            tokenURIs.push(_tokenURIs[i]);
-        }
-
-        emit TokenURIsAdded(_tokenURIs);
-    }
-
-    /**
-     * @dev External function to update the token uri. This function can be called only by owner.
-     * @param _index Index of token uri
-     * @param _tokenURI Array of new token uris
-     */
-    function updateTokenURI(uint256 _index, string memory _tokenURI)
+    function addTokenURI(string memory _tokenURI, uint256 _count)
         external
         onlyOwner
     {
-        tokenURIs[_index] = _tokenURI;
+        tokenURIs.push(_tokenURI);
+        tokenURICount[_tokenURI] = _count;
 
-        emit TokenURIUpdated(_index, _tokenURI);
+        emit TokenURIAdded(_tokenURI, _count);
+    }
+
+    /**
+     * @dev External function to change the token uri. This function can be called only by owner.
+     * @param _tokenURI Token uri
+     * @param _count Token uri count
+     */
+    function updateTokenURICount(string memory _tokenURI, uint256 _count)
+        external
+        onlyOwner
+    {
+        tokenURICount[_tokenURI] = _count;
+
+        emit TokenURICountUpdated(_tokenURI, _count);
     }
 
     /**

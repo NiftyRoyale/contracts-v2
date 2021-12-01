@@ -9,6 +9,7 @@ async function main() {
     const BattleRoyaleContract = await BattleRoyale.deploy();
   
     console.log("BattleRoyaleContract address:", BattleRoyaleContract.address);
+
   }
   
   main()
