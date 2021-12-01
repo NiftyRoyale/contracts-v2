@@ -112,11 +112,6 @@ contract BattleRoyaleRandomPart is ERC721URIStorage, Ownable {
             "BattleRoyaleRandom: Total token amount is more than max supply"
         );
 
-        require(
-            tokenURIs.length >= _amount,
-            "BattleRoyaleRandom: Token uris are not enough to purchase"
-        );
-
         if (msg.sender != owner()) {
             require(
                 _amount <= maxSupply - totalSupply &&
