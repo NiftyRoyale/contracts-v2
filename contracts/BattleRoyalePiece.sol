@@ -20,6 +20,9 @@ contract BattleRoyalePiece is ERC721URIStorage, Ownable {
     /// @notice Event emitted when user purchased the tokens.
     event Purchased(address user, uint256 amount, uint256 totalSupply);
 
+    /// @notice Event emitted when owner has set starting time.
+    event StartingTimeSet(uint256 time);
+
     /// @notice Event emitted when battle has started.
     event BattleStarted(address battleAddress, uint32[] inPlay);
 
@@ -64,6 +67,7 @@ contract BattleRoyalePiece is ERC721URIStorage, Ownable {
     uint256 public maxSupply;
     uint256 public totalSupply;
     uint256 public unitsPerTransaction;
+    uint256 public startingTime;
 
     uint32[] public inPlay;
 
@@ -115,6 +119,10 @@ contract BattleRoyalePiece is ERC721URIStorage, Ownable {
             maxSupply > 0 && totalSupply < maxSupply,
             "BattleRoyalePiece: Total token amount is more than max supply"
         );
+        require(
+            block.timestamp >= startingTime,
+            "BattleRoyalePiece: Not time to purchase"
+        );
 
         if (msg.sender != owner()) {
             require(
@@ -146,6 +154,15 @@ contract BattleRoyalePiece is ERC721URIStorage, Ownable {
         totalSupply += _amount;
 
         emit Purchased(msg.sender, _amount, totalSupply);
+    }
+
+    /**
+     * @dev External function to set starting time. This function can be called only by owner.
+     */
+    function setStartingTime(uint256 _newTime) external onlyOwner {
+        startingTime = _newTime;
+
+        emit StartingTimeSet(_newTime);
     }
 
     /**
