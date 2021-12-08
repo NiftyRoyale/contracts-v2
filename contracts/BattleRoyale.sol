@@ -84,7 +84,9 @@ contract BattleRoyale is ERC721URIStorage, Ownable {
      * @param _unitsPerTransaction Purchasable token amounts per transaction
      * @param _maxSupply Maximum number of mintable tokens
      * @param _defaultTokenURI Deafult token uri
+     * @param _prizeTokenURI Prize token uri
      * @param _baseURI Base token uri
+     * @param _startingTime Start time to purchase NFT
      */
     constructor(
         string memory _name,
@@ -93,14 +95,18 @@ contract BattleRoyale is ERC721URIStorage, Ownable {
         uint256 _unitsPerTransaction,
         uint256 _maxSupply,
         string memory _defaultTokenURI,
-        string memory _baseURI
+        string memory _prizeTokenURI,
+        string memory _baseURI,
+        uint256 _startingTime
     ) ERC721(_name, _symbol) {
         battleState = BATTLE_STATE.STANDBY;
         price = _price;
         unitsPerTransaction = _unitsPerTransaction;
         maxSupply = _maxSupply;
         defaultTokenURI = _defaultTokenURI;
+        prizeTokenURI = _prizeTokenURI;
         baseURI = _baseURI;
+        startingTime = _startingTime;
 
         emit BattleRoyaleDeployed();
     }
