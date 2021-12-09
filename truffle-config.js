@@ -56,5 +56,6 @@ module.exports = {
   ],
   api_keys: {
     etherscan: secretKovan.etherscan_api_key,
+    polygonscan: secretMumbai.polygonscan_api_key
   },
 };
