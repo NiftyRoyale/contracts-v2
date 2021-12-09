@@ -51,7 +51,7 @@ contract BattleRoyale is ERC721URIStorage, Ownable {
     event PriceSet(uint256 price);
 
     /// @notice Event emitted when the units per transaction set.
-    event UnitsPerTransactionSet(uint256 defaultTokenURI);
+    event UnitsPerTransactionSet(uint256 unitsPerTransaction);
 
     /// @notice Event emitted when max supply set.
     event MaxSupplySet(uint256 maxSupply);
