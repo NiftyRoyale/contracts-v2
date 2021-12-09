@@ -6,7 +6,7 @@ module.exports = async function (deployer) {
     BattleRoyale,
     'Nifty Royale X Tester: Nifty Royale NFT',
     'TVBR',
-    new BN('100000000000000'),
+    new BN('10000000000000000'),
     5,
     100,
     'QmPS3DjUdXZAFXq3SgDPqHapnqQqWqd25VX87Ri4dWTkxE',
