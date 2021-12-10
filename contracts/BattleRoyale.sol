@@ -123,7 +123,7 @@ contract BattleRoyale is ERC721URIStorage, Ownable {
         );
         require(
             maxSupply > 0 && totalSupply < maxSupply,
-            "BattleRoyale: Total token amount is more than max supply"
+            "BattleRoyale: The NFTs you attempted to purchase is now sold out"
         );
         require(
             block.timestamp >= startingTime,
