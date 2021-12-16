@@ -150,6 +150,18 @@ contract ChainlinkBattle is
      */
     function performUpkeep(bytes calldata _performData) external override {
         uint256 battleId = bytesToUint256(_performData, 0);
+        BattleInfo memory battle = battleQueue[battleId];
+
+        require(
+            battle.battleState,
+            "ChainlinkKeeper: Current battle is finished"
+        );
+        require(
+            block.timestamp >=
+                battle.lastEliminatedTime + (battle.intervalTime * 1 minutes),
+            "ChainlinkKeeper: Trigger time is not correct"
+        );
+
         executeBattle(battleId);
     }
 
